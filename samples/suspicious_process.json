@@ -1,0 +1,21 @@
+{
+  "site_id": "plant-a",
+  "asset_id": "plc-02",
+  "timestamp": "2026-04-15T09:10:00Z",
+  "network": {
+    "packet_rate": 140.0,
+    "bytes_per_sec": 52000.0,
+    "avg_packet_size": 370.0,
+    "tcp_syn_rate": 5.0,
+    "failed_login_rate": 0.0,
+    "new_connection_rate": 4.0,
+    "external_ip_ratio": 0.04,
+    "dns_query_rate": 3.0
+  },
+  "process_sequence": [
+    {"reactor_temp_c": 72.0, "reactor_pressure_bar": 8.2, "valve_position_pct": 44.0, "motor_current_a": 12.3},
+    {"reactor_temp_c": 73.8, "reactor_pressure_bar": 8.9, "valve_position_pct": 62.0, "motor_current_a": 13.5},
+    {"reactor_temp_c": 76.6, "reactor_pressure_bar": 9.8, "valve_position_pct": 79.0, "motor_current_a": 15.1},
+    {"reactor_temp_c": 79.2, "reactor_pressure_bar": 10.8, "valve_position_pct": 91.0, "motor_current_a": 16.8}
+  ]
+}

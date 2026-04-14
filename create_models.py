@@ -1,19 +1,35 @@
+from pathlib import Path
+
 import joblib
-import numpy as np
+import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-# Create network scaler (41 features based on script.js)
-network_scaler = StandardScaler()
-network_scaler.fit(np.random.randn(100, 41))
-joblib.dump(network_scaler, 'models/scaler.pkl')
+from preprocessing.contracts import NETWORK_FEATURES, PROCESS_FEATURES
 
-# Create network column names
-columns = ['f' + str(i) for i in range(41)]
-joblib.dump(columns, 'models/columns.pkl')
 
-# Create LSTM scaler (3 features based on script.js)
-lstm_scaler = StandardScaler()
-lstm_scaler.fit(np.random.randn(100, 3))
-joblib.dump(lstm_scaler, 'models/lstm_scaler.pkl')
+def train_scalers_from_csv(csv_path: str) -> None:
+    frame = pd.read_csv(csv_path)
+    missing_net = [c for c in NETWORK_FEATURES if c not in frame.columns]
+    missing_proc = [c for c in PROCESS_FEATURES if c not in frame.columns]
+    if missing_net or missing_proc:
+        raise ValueError(f"CSV missing required columns. network={missing_net}, process={missing_proc}")
 
-print('✅ Created missing scaler and columns files')
+    model_dir = Path("models")
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    network_scaler = StandardScaler().fit(frame[NETWORK_FEATURES].values)
+    process_scaler = StandardScaler().fit(frame[PROCESS_FEATURES].values)
+
+    joblib.dump(network_scaler, model_dir / "scaler.pkl")
+    joblib.dump(NETWORK_FEATURES, model_dir / "columns.pkl")
+    joblib.dump(process_scaler, model_dir / "lstm_scaler.pkl")
+    print("Saved scaler artifacts into models/")
+
+
+if __name__ == "__main__":
+    input_csv = "samples/training_reference.csv"
+    if not Path(input_csv).exists():
+        raise FileNotFoundError(
+            "Missing samples/training_reference.csv. Provide real industrial baseline data before creating scalers."
+        )
+    train_scalers_from_csv(input_csv)

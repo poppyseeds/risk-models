@@ -11,6 +11,7 @@ __pycache__/
 
 # Logs
 *.log
+data/*.db
 
 # OS files
 .DS_Store
@@ -23,3 +24,8 @@ Thumbs.db
 build/
 dist/
 *.egg-info/
+
+# Model artifacts
+models/*.h5
+models/*.pkl
+models/*.npy

@@ -1,22 +1,47 @@
-import tensorflow as tf
+from pathlib import Path
+
 import numpy as np
+import tensorflow as tf
 
-# Create a compatible network detection model (41 inputs)
-network_model = tf.keras.Sequential([
-    tf.keras.layers.Dense(64, activation='relu', input_shape=(41,)),
-    tf.keras.layers.Dense(32, activation='relu'),
-    tf.keras.layers.Dense(1, activation='sigmoid')
-])
-network_model.compile(optimizer='adam', loss='binary_crossentropy')
-network_model.save('models/ram_model.h5')
-print("✅ Created ram_model.h5")
+from preprocessing.contracts import NETWORK_FEATURES, PROCESS_FEATURES
 
-# Create a compatible LSTM model (3 input features, window of 10)
-lstm_model = tf.keras.Sequential([
-    tf.keras.layers.LSTM(32, activation='relu', input_shape=(10, 3), return_sequences=True),
-    tf.keras.layers.LSTM(16, activation='relu'),
-    tf.keras.layers.Dense(3)  # Reconstruct 3 features
-])
-lstm_model.compile(optimizer='adam', loss='mse')
-lstm_model.save('models/lstm_model.h5')
-print("✅ Created lstm_model.h5")
+
+def build_network_model() -> tf.keras.Model:
+    model = tf.keras.Sequential(
+        [
+            tf.keras.layers.Input(shape=(len(NETWORK_FEATURES),)),
+            tf.keras.layers.Dense(64, activation="relu"),
+            tf.keras.layers.Dense(32, activation="relu"),
+            tf.keras.layers.Dense(1, activation="sigmoid"),
+        ]
+    )
+    model.compile(optimizer="adam", loss="binary_crossentropy")
+    return model
+
+
+def build_process_autoencoder(window_size: int = 10) -> tf.keras.Model:
+    model = tf.keras.Sequential(
+        [
+            tf.keras.layers.Input(shape=(window_size, len(PROCESS_FEATURES))),
+            tf.keras.layers.LSTM(32, return_sequences=True),
+            tf.keras.layers.LSTM(16, return_sequences=True),
+            tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(len(PROCESS_FEATURES))),
+        ]
+    )
+    model.compile(optimizer="adam", loss="mse")
+    return model
+
+
+if __name__ == "__main__":
+    model_dir = Path("models")
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    network_model = build_network_model()
+    process_model = build_process_autoencoder()
+
+    # This script only saves architecture-initialized models to unblock wiring tests.
+    # For production/demo, retrain using real industrial datasets before use.
+    network_model.save(model_dir / "ram_model.h5")
+    process_model.save(model_dir / "lstm_model.h5")
+    np.save(model_dir / "threshold.npy", np.array([0.05], dtype=float))
+    print("Saved untrained model architecture artifacts to models/")

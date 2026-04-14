@@ -1,48 +1,530 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RAM Antivirus</title>
+  <title>RAM Antivirus · Industrial SOC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg: #0a0e12;
+      --bg-elevated: #111820;
+      --surface: #161d27;
+      --surface-hover: #1c2530;
+      --border: #2a3644;
+      --border-subtle: rgba(42, 54, 68, 0.6);
+      --text: #e8eef4;
+      --text-muted: #8b9caa;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.14);
+      --accent-glow: rgba(56, 189, 248, 0.35);
+      --success: #34d399;
+      --warn: #fbbf24;
+      --danger: #fb7185;
+      --critical: #f43f5e;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+      --font: "Plus Jakarta Sans", system-ui, sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: 50px auto;
-      padding: 20px;
-      background-color: #f5f5f5;
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 120% 80% at 50% -20%, rgba(56, 189, 248, 0.08), transparent 50%),
+        radial-gradient(ellipse 60% 40% at 100% 50%, rgba(99, 102, 241, 0.06), transparent 45%);
     }
-    h1 {
-      color: #333;
-      text-align: center;
+
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 22px 48px;
     }
-    button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
+
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--accent) 0%, #6366f1 100%);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: -0.02em;
+      color: var(--bg);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset, 0 8px 24px var(--accent-glow);
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+    }
+
+    .header .tagline {
+      margin: 4px 0 0;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .header-meta {
+      text-align: right;
+    }
+
+    .env-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .env-pill::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    .env-pill.degraded::before {
+      background: var(--warn);
+      box-shadow: 0 0 8px var(--warn);
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .panel h2 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel h2 .icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-family: var(--mono);
+      font-weight: 500;
+    }
+
+    .panel-desc {
+      margin: 0 0 14px;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      max-width: 62ch;
+    }
+
+    #payloadInput {
+      width: 100%;
+      min-height: 200px;
+      padding: 16px 18px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.55;
+      color: #c8d4e0;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    #payloadInput:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .file-wrap {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+
+    .file-wrap input[type="file"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .btn {
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
       cursor: pointer;
-      font-size: 16px;
+      transition: transform 0.12s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
     }
-    button:hover {
-      background-color: #45a049;
+
+    .btn:active {
+      transform: scale(0.98);
     }
-    #result {
-      margin-top: 20px;
-      padding: 15px;
-      background-color: white;
-      border-radius: 4px;
-      border-left: 4px solid #4CAF50;
+
+    .btn-primary {
+      background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 100%);
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(14, 165, 233, 0.35);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 100%);
+    }
+
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface-hover);
+      border-color: var(--text-muted);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border-color: var(--border);
+    }
+
+    .btn-ghost:hover {
+      color: var(--text);
+      background: var(--bg-elevated);
+    }
+
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.12);
+      color: #fda4af;
+      border-color: rgba(244, 63, 94, 0.35);
+    }
+
+    .btn-danger:hover {
+      background: rgba(244, 63, 94, 0.22);
+      border-color: rgba(244, 63, 94, 0.55);
+      color: #fecdd3;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 960px) {
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 520px) {
+      .metrics { grid-template-columns: 1fr; }
+      .header-meta { text-align: left; width: 100%; }
+    }
+
+    .metric {
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 18px 18px 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .metric::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), #818cf8);
+      opacity: 0.85;
+    }
+
+    .metric:nth-child(2)::before { background: linear-gradient(90deg, #f472b6, #fb7185); }
+    .metric:nth-child(3)::before { background: linear-gradient(90deg, #34d399, #2dd4bf); }
+    .metric:nth-child(4)::before { background: linear-gradient(90deg, #fbbf24, #f97316); }
+
+    .metric-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-value.sm {
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    #modelBadge {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--warn);
+      margin-top: 8px;
+      min-height: 1.2em;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-low { background: rgba(52, 211, 153, 0.18); color: var(--success); }
+    .badge-medium { background: rgba(251, 191, 36, 0.2); color: var(--warn); }
+    .badge-high { background: rgba(251, 113, 133, 0.2); color: #fda4af; }
+    .badge-critical { background: rgba(244, 63, 94, 0.25); color: #fecdd3; }
+
+    .json-out {
+      margin: 0;
+      padding: 18px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.55;
+      color: #a8bcc8;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow-x: auto;
+      max-height: 420px;
+      overflow-y: auto;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 12px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: #d1dde8;
+      vertical-align: top;
+    }
+
+    tbody tr {
+      transition: background 0.12s;
+    }
+
+    tbody tr:hover {
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .reason-cell {
+      max-width: 280px;
+      color: var(--text-muted);
+      font-size: 12.5px;
+    }
+
+    .empty-hint {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--text-muted);
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
-  <h1>RAM AI Cyber Defense</h1>
+  <div class="shell">
+    <header class="header">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">RAM</div>
+        <div>
+          <h1>Industrial cyber defense</h1>
+          <p class="tagline">Fused network + process risk · live detections · alert history</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        <span id="envPill" class="env-pill">Operations</span>
+      </div>
+    </header>
 
-  <button onclick="runDetection()">Run Detection</button>
+    <section class="panel">
+      <div class="panel-head">
+        <h2><span class="icon" aria-hidden="true">{}</span> Incident payload</h2>
+      </div>
+      <p class="panel-desc">Paste JSON or upload a file. Quick-load industrial scenarios below.</p>
+      <textarea id="payloadInput" spellcheck="false" placeholder="{ &quot;site_id&quot;: … }"></textarea>
+      <div class="toolbar">
+        <button type="button" class="btn btn-primary" onclick="runDetection()">Run detection</button>
+        <label class="btn btn-secondary file-wrap">
+          Upload JSON / CSV
+          <input type="file" id="fileInput" accept=".json,.csv" />
+        </label>
+        <button type="button" class="btn btn-ghost" onclick="loadSample('normal')">Normal</button>
+        <button type="button" class="btn btn-ghost" onclick="loadSample('suspicious_network')">Suspicious network</button>
+        <button type="button" class="btn btn-ghost" onclick="loadSample('suspicious_process')">Suspicious process</button>
+        <button type="button" class="btn btn-ghost" onclick="loadSample('combined_attack')">Combined attack</button>
+      </div>
+    </section>
 
-  <h3 id="result"></h3>
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">System · severity</div>
+        <div id="statusCard" class="metric-value sm">—</div>
+        <div id="modelBadge" aria-live="polite"></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Fused risk</div>
+        <div id="riskCard" class="metric-value">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Network score</div>
+        <div id="networkCard" class="metric-value">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Process score</div>
+        <div id="processCard" class="metric-value">—</div>
+      </div>
+    </div>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2><span class="icon" aria-hidden="true">◇</span> Latest detection</h2>
+      </div>
+      <pre id="latestDetection" class="json-out">Run detection to see the unified risk object.</pre>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2><span class="icon" aria-hidden="true">&#9201;</span> Timeline</h2>
+        <button type="button" class="btn btn-danger" id="clearTimelineBtn" onclick="clearTimeline()">Clear timeline</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Detected (UTC)</th>
+              <th>Site</th>
+              <th>Asset</th>
+              <th>Severity</th>
+              <th>Risk</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody id="historyTable"></tbody>
+        </table>
+      </div>
+      <p id="historyEmpty" class="empty-hint" hidden>No incidents logged yet.</p>
+    </section>
+  </div>
 
   <script src="/static/script.js"></script>
 </body>
