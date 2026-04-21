@@ -48,6 +48,34 @@ class FakeStore:
         return 0
 
 
+class FakeAIAnalystService:
+    def status(self):
+        return {
+            "enabled": True,
+            "ready": True,
+            "provider": "ollama",
+            "model": "llama3.1:8b",
+            "detail": None,
+            "available_models": ["llama3.1:8b"],
+        }
+
+    def analyze(self, payload, risk):
+        return {
+            "status": "available",
+            "provider": "ollama",
+            "model": "llama3.1:8b",
+            "generated_at": "2026-04-15T00:00:00+00:00",
+            "summary": "Likely coordinated activity affecting the PLC.",
+            "what_happened": "An anomaly was detected in the control asset.",
+            "where_it_happened": f"{payload['site_id']}/{payload['asset_id']}",
+            "why_it_happened": "Network and process indicators were both elevated.",
+            "evidence": ["network_score=0.7", "process_score=0.5"],
+            "immediate_actions": ["Isolate the affected PLC."],
+            "recovery_plan": ["Review configuration changes."],
+            "confidence": "medium",
+        }
+
+
 def _payload():
     return {
         "site_id": "plant-a",
@@ -161,3 +189,36 @@ def test_status_includes_domain_readiness():
         "process": True,
         "hardware": False,
     }
+
+
+def test_detect_route_includes_ai_analysis_when_service_is_present():
+    app = Flask(__name__)
+    app.register_blueprint(
+        create_api(FakeInferenceService(), FakeStore(), FakeAIAnalystService()),
+        url_prefix="/api",
+    )
+    client = app.test_client()
+
+    response = client.post("/api/detect", json=_payload())
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["risk"]["ai_analysis"]["status"] == "available"
+    assert body["risk"]["ai_analysis"]["where_it_happened"] == "plant-a/plc-01"
+
+
+def test_status_includes_ai_analyst_status():
+    app = Flask(__name__)
+    app.register_blueprint(
+        create_api(FakeInferenceService(), FakeStore(), FakeAIAnalystService()),
+        url_prefix="/api",
+    )
+    client = app.test_client()
+
+    response = client.get("/api/status")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["ai_analyst"]["ready"] is True
+    assert body["ai_analyst"]["model"] == "llama3.1:8b"
+    assert body["ai_analyst"]["provider"] == "ollama"

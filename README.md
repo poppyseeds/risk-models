@@ -7,6 +7,7 @@ RAM Antivirus is a Flask-based industrial cyber defense demo that fuses three do
 - Hardware anomaly and tamper scoring
 
 The system returns one explainable fused risk object with severity, reason, and recommendation.
+It can also attach an optional local AI incident analyst through Ollama that explains what happened, where it happened, why it likely happened, and what to do next.
 
 ## What It Detects
 
@@ -23,6 +24,7 @@ The system returns one explainable fused risk object with severity, reason, and 
 - `services/model_loader.py`: model/scaler/threshold loading with readiness errors
 - `services/heuristics.py`: domain heuristics and hardware hard-rule triggers
 - `services/inference.py`: end-to-end scoring pipeline and fusion input preparation
+- `services/ai_analyst.py`: optional Ollama-backed local incident analyst for narrative diagnosis and response steps
 - `riskscore.py`: final fusion logic and override behavior
 - `services/logging_store.py`: SQLite incident history
 - `templates/index.html`, `static/script.js`: dashboard UI
@@ -57,6 +59,9 @@ Returns:
 - `anomaly_reason` (includes hardware-critical reasons when applicable)
 - `top_contributors` for all domains
 - `recommendation`
+- optional `ai_analysis` with:
+  `summary`, `what_happened`, `where_it_happened`, `why_it_happened`,
+  `evidence`, `immediate_actions`, `recovery_plan`, `confidence`
 - `model_status` and per-domain readiness
 
 ### `GET /api/history`
@@ -70,6 +75,7 @@ Clears timeline history.
 ### `GET /api/status`
 
 Returns system/model readiness and load errors.
+Also returns AI analyst readiness when configured.
 
 ## Setup and Run (Windows / GitHub Friendly)
 
@@ -91,6 +97,12 @@ python -m venv .venv
 
 ```bash
 pip install -r requirements.txt
+```
+
+If you want the local AI incident analyst:
+
+```bash
+set AI_ANALYST_MODEL=llama3.1:8b
 ```
 
 ### 4) Place model artifacts in `models/`
@@ -161,6 +173,10 @@ Environment variables:
 - `HARDWARE_LOSS_SATURATION_MULT`
 - `HISTORY_DB_PATH`
 - `TOP_SIGNALS_COUNT`
+- `AI_ANALYST_ENABLED`
+- `AI_ANALYST_MODEL`
+- `AI_ANALYST_BASE_URL`
+- `AI_ANALYST_TIMEOUT_SEC`
 
 ## Push to GitHub
 

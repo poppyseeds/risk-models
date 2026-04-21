@@ -208,6 +208,234 @@
       margin-top: 16px;
     }
 
+    .payload-insights {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-subtle);
+      display: grid;
+      gap: 18px;
+    }
+
+    .payload-insights-head h3 {
+      margin: 0;
+      font-size: 0.98rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .payload-insights-note {
+      margin: 6px 0 0;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .overview-card {
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+    }
+
+    .overview-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .overview-value {
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .viz-panel {
+      padding: 16px 18px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      min-width: 0;
+    }
+
+    .viz-panel-wide {
+      grid-column: 1 / -1;
+    }
+
+    .viz-panel h3 {
+      margin: 0 0 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .viz-subtitle {
+      margin: 0 0 14px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .bar-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .bar-row {
+      display: grid;
+      gap: 6px;
+    }
+
+    .bar-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: baseline;
+      font-size: 12px;
+    }
+
+    .bar-label {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .bar-value {
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      text-align: right;
+    }
+
+    .bar-track {
+      position: relative;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+    }
+
+    .bar-fill.warn {
+      background: linear-gradient(90deg, #f59e0b, #f97316);
+    }
+
+    .bar-fill.danger {
+      background: linear-gradient(90deg, #fb7185, #f43f5e);
+    }
+
+    .bar-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+    }
+
+    .series-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .series-card {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.02);
+      min-width: 0;
+    }
+
+    .series-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .series-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .series-latest {
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .sparkline {
+      width: 100%;
+      height: 88px;
+      display: block;
+    }
+
+    .spark-stats {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+    }
+
+    .state-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .state-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .state-pill.active {
+      background: rgba(244, 63, 94, 0.14);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: #fecdd3;
+    }
+
+    .viz-empty {
+      padding: 18px 16px;
+      border-radius: 10px;
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      color: var(--text-muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
     .file-wrap {
       position: relative;
       overflow: hidden;
@@ -289,10 +517,14 @@
 
     @media (max-width: 960px) {
       .metrics { grid-template-columns: repeat(2, 1fr); }
+      .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .insight-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 520px) {
       .metrics { grid-template-columns: 1fr; }
+      .overview-grid { grid-template-columns: 1fr; }
+      .series-grid { grid-template-columns: 1fr; }
       .header-meta { text-align: left; width: 100%; }
     }
 
@@ -407,6 +639,134 @@
 
     @media (max-width: 900px) {
       .explanation-grid { grid-template-columns: 1fr; }
+    }
+
+    .analyst-panel {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .analyst-summary {
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(56, 189, 248, 0.24);
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.10), rgba(129, 140, 248, 0.08));
+      display: grid;
+      gap: 10px;
+    }
+
+    .analyst-summary-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .analyst-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--accent);
+    }
+
+    .analyst-model {
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--text-muted);
+    }
+
+    .analyst-summary p {
+      margin: 0;
+      color: #d7e6f2;
+      font-size: 13px;
+    }
+
+    .analyst-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .analyst-grid { grid-template-columns: 1fr; }
+    }
+
+    .analyst-card {
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+    }
+
+    .analyst-card h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    .analyst-card p {
+      margin: 0;
+      color: #d1dde8;
+      font-size: 13px;
+    }
+
+    .analyst-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .analyst-list li {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.02);
+      color: #d1dde8;
+      font-size: 13px;
+    }
+
+    .analyst-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .analyst-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .analyst-pill.high {
+      color: #fecdd3;
+      border-color: rgba(244, 63, 94, 0.35);
+      background: rgba(244, 63, 94, 0.12);
+    }
+
+    .analyst-pill.medium {
+      color: #fde68a;
+      border-color: rgba(245, 158, 11, 0.35);
+      background: rgba(245, 158, 11, 0.12);
+    }
+
+    .analyst-pill.low {
+      color: #bfdbfe;
+      border-color: rgba(56, 189, 248, 0.35);
+      background: rgba(56, 189, 248, 0.12);
     }
 
     .explanation-card {
@@ -567,6 +927,35 @@
         <button type="button" class="btn btn-ghost" onclick="loadSample('combined_attack')">Combined attack</button>
         <button type="button" class="btn btn-ghost" onclick="loadSample('hardware_tamper')">Hardware tamper</button>
       </div>
+      <div class="payload-insights">
+        <div class="payload-insights-head">
+          <h3>Payload insights</h3>
+          <p id="payloadInsightsNote" class="payload-insights-note">Preview charts update as you edit the payload.</p>
+        </div>
+        <div id="payloadOverview" class="overview-grid"></div>
+        <div class="insight-grid">
+          <article class="viz-panel">
+            <h3>Network profile</h3>
+            <p class="viz-subtitle">Current network snapshot compared against soft baseline limits.</p>
+            <div id="networkProfileChart" class="bar-list"></div>
+          </article>
+          <article class="viz-panel">
+            <h3>Hardware state</h3>
+            <p class="viz-subtitle">Discrete tamper flags and physical access signals.</p>
+            <div id="hardwareStatePills" class="state-pills"></div>
+          </article>
+          <article class="viz-panel viz-panel-wide">
+            <h3>Process time-series</h3>
+            <p class="viz-subtitle">Trend lines for the control-loop values in the payload window.</p>
+            <div id="processSeriesCharts" class="series-grid"></div>
+          </article>
+          <article class="viz-panel viz-panel-wide">
+            <h3>Hardware time-series</h3>
+            <p class="viz-subtitle">Board-level telemetry over the supplied hardware sequence window.</p>
+            <div id="hardwareSeriesCharts" class="series-grid"></div>
+          </article>
+        </div>
+      </div>
     </section>
 
     <div class="metrics">
@@ -612,6 +1001,45 @@
             <h3>Hardware factors</h3>
             <ul id="hardwareExplanation" class="explanation-list"></ul>
             <div id="hardwareRuleHits" class="explanation-rules"></div>
+          </article>
+        </div>
+      </div>
+      <div id="aiAnalystPanel" class="analyst-panel" hidden>
+        <div class="analyst-summary">
+          <div class="analyst-summary-head">
+            <span class="analyst-kicker">AI Incident Analyst</span>
+            <span id="aiAnalystModel" class="analyst-model"></span>
+          </div>
+          <p id="aiAnalystSummary"></p>
+          <div class="analyst-meta">
+            <span id="aiAnalystStatus" class="analyst-pill"></span>
+            <span id="aiAnalystConfidence" class="analyst-pill"></span>
+          </div>
+        </div>
+        <div class="analyst-grid">
+          <article class="analyst-card">
+            <h3>What Happened</h3>
+            <p id="aiAnalystWhat"></p>
+          </article>
+          <article class="analyst-card">
+            <h3>Where It Happened</h3>
+            <p id="aiAnalystWhere"></p>
+          </article>
+          <article class="analyst-card">
+            <h3>Why It Likely Happened</h3>
+            <p id="aiAnalystWhy"></p>
+          </article>
+          <article class="analyst-card">
+            <h3>Evidence</h3>
+            <ul id="aiAnalystEvidence" class="analyst-list"></ul>
+          </article>
+          <article class="analyst-card">
+            <h3>Immediate Actions</h3>
+            <ul id="aiAnalystActions" class="analyst-list"></ul>
+          </article>
+          <article class="analyst-card">
+            <h3>Recovery Plan</h3>
+            <ul id="aiAnalystRecovery" class="analyst-list"></ul>
           </article>
         </div>
       </div>

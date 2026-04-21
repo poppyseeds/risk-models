@@ -3,6 +3,7 @@ from flask_cors import CORS
 
 from api.routes import create_api
 from config.settings import settings
+from services.ai_analyst import AIAnalystService
 from services.inference import InferenceService
 from services.logging_store import init_store
 from services import logging_store
@@ -15,8 +16,9 @@ def create_app():
 
     assets = load_inference_assets()
     inference_service = InferenceService(assets)
+    ai_analyst_service = AIAnalystService()
     init_store()
-    app.register_blueprint(create_api(inference_service, logging_store), url_prefix="/api")
+    app.register_blueprint(create_api(inference_service, logging_store, ai_analyst_service), url_prefix="/api")
 
     @app.route("/")
     def home():

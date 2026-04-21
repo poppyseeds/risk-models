@@ -21,7 +21,7 @@ def _parse_history_limit(raw: Optional[str], default: int = 20) -> Optional[int]
     return n
 
 
-def create_api(inference_service, logging_store):
+def create_api(inference_service, logging_store, ai_analyst_service=None):
     bp = Blueprint("api", __name__)
 
     @bp.route("/detect", methods=["POST"])
@@ -30,6 +30,8 @@ def create_api(inference_service, logging_store):
             payload = request.get_json(silent=True)
             payload = validate_payload(payload)
             result = inference_service.run(payload)
+            if ai_analyst_service is not None:
+                result["ai_analysis"] = ai_analyst_service.analyze(payload, result)
             logging_store.record_incident(result)
             return jsonify({"risk": result}), 200
         except PayloadValidationError as exc:
@@ -74,6 +76,7 @@ def create_api(inference_service, logging_store):
                     "process": assets["process_model"] is not None and assets["process_scaler"] is not None,
                     "hardware": assets.get("hardware_model") is not None and assets.get("hardware_scaler") is not None,
                 },
+                "ai_analyst": ai_analyst_service.status() if ai_analyst_service is not None else None,
             }
         )
 

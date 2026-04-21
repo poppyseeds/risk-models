@@ -27,6 +27,10 @@ class Settings:
     # process loss / (threshold * mult) capped at 1 before blending
     process_loss_saturation_mult: float = float(os.getenv("PROCESS_LOSS_SATURATION_MULT", "20.0"))
     hardware_loss_saturation_mult: float = float(os.getenv("HARDWARE_LOSS_SATURATION_MULT", "12.0"))
+    ai_analyst_enabled: bool = os.getenv("AI_ANALYST_ENABLED", "true").lower() == "true"
+    ai_analyst_model: str = os.getenv("AI_ANALYST_MODEL", "llama3.1:8b")
+    ai_analyst_base_url: str = os.getenv("AI_ANALYST_BASE_URL", "http://127.0.0.1:11434")
+    ai_analyst_timeout_sec: int = int(os.getenv("AI_ANALYST_TIMEOUT_SEC", "60"))
 
 
 settings = Settings()
