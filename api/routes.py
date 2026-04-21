@@ -64,10 +64,16 @@ def create_api(inference_service, logging_store):
 
     @bp.route("/status", methods=["GET"])
     def status():
+        assets = inference_service.assets
         return jsonify(
             {
-                "system_status": "healthy" if inference_service.assets["ready"] else "degraded",
-                "model_errors": inference_service.assets["errors"],
+                "system_status": "healthy" if assets["ready"] else "degraded",
+                "model_errors": assets["errors"],
+                "domain_readiness": {
+                    "network": assets["network_model"] is not None and assets["network_scaler"] is not None,
+                    "process": assets["process_model"] is not None and assets["process_scaler"] is not None,
+                    "hardware": assets.get("hardware_model") is not None and assets.get("hardware_scaler") is not None,
+                },
             }
         )
 

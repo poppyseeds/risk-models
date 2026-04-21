@@ -55,7 +55,7 @@ if __name__ == "__main__":
     # For production/demo, retrain using real industrial datasets before use.
     network_model.save(model_dir / "ram_model.h5")
     process_model.save(model_dir / "lstm_model.h5")
-    hardware_model.save(model_dir / "hardware_model.h5")
+    hardware_model.save(model_dir / "hardware_model.keras")
     np.save(model_dir / "threshold.npy", np.array([0.05], dtype=float))
     np.save(model_dir / "hardware_threshold.npy", np.array([0.05], dtype=float))
     print("Saved untrained network/process/hardware model artifacts to models/")

@@ -27,6 +27,10 @@ def _resolve_hardware_model_path(path: str) -> str:
         alt = candidate.with_suffix(".keras")
         if alt.exists():
             return str(alt)
+    if candidate.suffix.lower() == ".keras":
+        alt = candidate.with_suffix(".h5")
+        if alt.exists():
+            return str(alt)
     return path
 
 

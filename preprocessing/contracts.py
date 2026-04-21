@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Dict, List
 
 
@@ -62,12 +63,43 @@ class PayloadValidationError(ValueError):
     pass
 
 
+def _coerce_finite_float(value, label: str) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise PayloadValidationError(f"{label} must be a finite number") from exc
+    if not (number == number and number not in (float("inf"), float("-inf"))):
+        raise PayloadValidationError(f"{label} must be a finite number")
+    return number
+
+
+def _coerce_binary_int(value, label: str) -> int:
+    try:
+        number = int(value)
+    except (TypeError, ValueError) as exc:
+        raise PayloadValidationError(f"{label} must be 0 or 1") from exc
+    if number not in (0, 1):
+        raise PayloadValidationError(f"{label} must be 0 or 1")
+    return number
+
+
+def _validate_timestamp(timestamp: str) -> None:
+    if not isinstance(timestamp, str) or not timestamp.strip():
+        raise PayloadValidationError("timestamp must be a non-empty ISO 8601 string")
+    try:
+        datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise PayloadValidationError("timestamp must be a valid ISO 8601 string") from exc
+
+
 def _validate_network(network: Dict[str, float]) -> None:
     if not isinstance(network, dict):
         raise PayloadValidationError("network must be an object with named features")
     missing = [f for f in NETWORK_FEATURES if f not in network]
     if missing:
         raise PayloadValidationError(f"network missing features: {missing}")
+    for feature in NETWORK_FEATURES:
+        network[feature] = _coerce_finite_float(network[feature], f"network.{feature}")
 
 
 def _validate_process_sequence(process_sequence: List[Dict[str, float]]) -> None:
@@ -79,6 +111,8 @@ def _validate_process_sequence(process_sequence: List[Dict[str, float]]) -> None
         missing = [f for f in PROCESS_FEATURES if f not in row]
         if missing:
             raise PayloadValidationError(f"process_sequence[{i}] missing features: {missing}")
+        for feature in PROCESS_FEATURES:
+            row[feature] = _coerce_finite_float(row[feature], f"process_sequence[{i}].{feature}")
 
 
 def _validate_hardware_sequence(hardware_sequence: List[Dict[str, float]]) -> None:
@@ -90,6 +124,8 @@ def _validate_hardware_sequence(hardware_sequence: List[Dict[str, float]]) -> No
         missing = [f for f in HARDWARE_SEQUENCE_FEATURES if f not in row]
         if missing:
             raise PayloadValidationError(f"hardware_sequence[{i}] missing features: {missing}")
+        for feature in HARDWARE_SEQUENCE_FEATURES:
+            row[feature] = _coerce_finite_float(row[feature], f"hardware_sequence[{i}].{feature}")
 
 
 def _validate_hardware_state(hardware_state: Dict[str, int]) -> None:
@@ -98,6 +134,8 @@ def _validate_hardware_state(hardware_state: Dict[str, int]) -> None:
     missing = [f for f in HARDWARE_STATE_FEATURES if f not in hardware_state]
     if missing:
         raise PayloadValidationError(f"hardware_state missing features: {missing}")
+    for feature in HARDWARE_STATE_FEATURES:
+        hardware_state[feature] = _coerce_binary_int(hardware_state[feature], f"hardware_state.{feature}")
 
 
 def _normalize_hardware(payload: Dict) -> Dict:
@@ -116,6 +154,7 @@ def validate_payload(payload: Dict) -> Dict:
     if missing:
         raise PayloadValidationError(f"missing required keys: {missing}")
     normalized = _normalize_hardware(payload)
+    _validate_timestamp(normalized["timestamp"])
     _validate_network(normalized["network"])
     _validate_process_sequence(normalized["process_sequence"])
     _validate_hardware_sequence(normalized["hardware_sequence"])

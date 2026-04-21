@@ -5,7 +5,16 @@ from api.routes import create_api
 
 class FakeInferenceService:
     def __init__(self):
-        self.assets = {"ready": True, "errors": []}
+        self.assets = {
+            "ready": True,
+            "errors": [],
+            "network_model": object(),
+            "network_scaler": object(),
+            "process_model": object(),
+            "process_scaler": object(),
+            "hardware_model": object(),
+            "hardware_scaler": object(),
+        }
 
     def run(self, payload):
         return {
@@ -120,3 +129,35 @@ def test_history_delete_clears_timeline():
     body = r.get_json()
     assert body["ok"] is True
     assert body["cleared"] == 3
+
+
+def test_detect_route_rejects_bad_numeric_payload():
+    app = Flask(__name__)
+    app.register_blueprint(create_api(FakeInferenceService(), FakeStore()), url_prefix="/api")
+    client = app.test_client()
+
+    payload = _payload()
+    payload["network"]["packet_rate"] = "not-a-number"
+    response = client.post("/api/detect", json=payload)
+
+    assert response.status_code == 400
+    body = response.get_json()
+    assert body["error"] == "invalid_payload"
+
+
+def test_status_includes_domain_readiness():
+    app = Flask(__name__)
+    service = FakeInferenceService()
+    service.assets["hardware_model"] = None
+    app.register_blueprint(create_api(service, FakeStore()), url_prefix="/api")
+    client = app.test_client()
+
+    response = client.get("/api/status")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["domain_readiness"] == {
+        "network": True,
+        "process": True,
+        "hardware": False,
+    }

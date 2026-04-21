@@ -58,6 +58,20 @@ def network_heuristic_anomaly(network: Dict[str, float]) -> float:
     return float(np.mean(parts))
 
 
+def network_feature_contributions(network: Dict[str, float]) -> List[Dict[str, float]]:
+    contributions: List[Dict[str, float]] = []
+    for key in NETWORK_FEATURES:
+        soft = _NETWORK_SOFT_MAX[key]
+        value = float(network[key])
+        if value <= soft:
+            score = 0.0
+        else:
+            excess = (value - soft) / (soft + 1e-8)
+            score = float(np.clip(excess / 2.0, 0.0, 1.0))
+        contributions.append({"signal": key, "value": value, "expected_max": float(soft), "score": score})
+    return sorted(contributions, key=lambda item: item["score"], reverse=True)
+
+
 def process_heuristic_anomaly(process_sequence: List[Dict[str, float]]) -> float:
     if len(process_sequence) < 2:
         return 0.0
@@ -89,6 +103,15 @@ def hardware_rule_hits(hardware_state: Dict[str, int]) -> List[str]:
         if int(hardware_state.get(key, 0)) == 1:
             hits.append(label)
     return hits
+
+
+def hardware_rule_contributions(hardware_state: Dict[str, int]) -> List[Dict[str, int]]:
+    contributions: List[Dict[str, int]] = []
+    for key, label in _HARDWARE_CRITICAL_FLAGS.items():
+        value = int(hardware_state.get(key, 0))
+        if value == 1:
+            contributions.append({"signal": key, "label": label, "value": value, "score": 1})
+    return contributions
 
 
 def hardware_rule_anomaly(hardware_state: Dict[str, int]) -> float:

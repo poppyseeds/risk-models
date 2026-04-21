@@ -5,14 +5,22 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from config.settings import settings
-from preprocessing.contracts import DEFAULT_HARDWARE_SEQUENCE_ROW, DEFAULT_HARDWARE_STATE, NETWORK_FEATURES
+from preprocessing.contracts import (
+    DEFAULT_HARDWARE_SEQUENCE_ROW,
+    DEFAULT_HARDWARE_STATE,
+    HARDWARE_SEQUENCE_FEATURES,
+    NETWORK_FEATURES,
+    PROCESS_FEATURES,
+)
 from preprocessing.transform import hardware_matrix, network_frame, process_matrix
 from response.recommendations import classify_severity, recommendation_for_severity
 from riskscore import FusionEngine
 from services.heuristics import (
     hardware_heuristic_anomaly,
+    hardware_rule_contributions,
     hardware_rule_anomaly,
     hardware_rule_hits,
+    network_feature_contributions,
     network_heuristic_anomaly,
     process_heuristic_anomaly,
 )
@@ -53,21 +61,122 @@ class InferenceService:
         return window
 
     def _top_network_signals(self, network_payload: Dict[str, float]) -> List[Dict]:
-        sorted_items = sorted(network_payload.items(), key=lambda kv: abs(float(kv[1])), reverse=True)
-        return [{"signal": k, "value": float(v)} for k, v in sorted_items[: settings.top_signals_count]]
+        return [
+            {
+                "signal": item["signal"],
+                "value": float(item["value"]),
+                "score": float(item["score"]),
+            }
+            for item in network_feature_contributions(network_payload)[: settings.top_signals_count]
+        ]
 
-    def _top_process_signals(self, process_sequence: List[Dict[str, float]]) -> List[Dict]:
-        last = process_sequence[-1]
-        sorted_items = sorted(last.items(), key=lambda kv: abs(float(kv[1])), reverse=True)
-        return [{"signal": k, "value": float(v)} for k, v in sorted_items[: settings.top_signals_count]]
+    def _top_process_signals(self, process_contribs: List[Dict[str, float]]) -> List[Dict]:
+        return [
+            {
+                "signal": item["signal"],
+                "value": float(item["value"]),
+                "score": float(item["score"]),
+            }
+            for item in process_contribs[: settings.top_signals_count]
+        ]
 
-    def _top_hardware_signals(self, hardware_sequence: List[Dict[str, float]], hardware_state: Dict[str, int]) -> List[Dict]:
-        active_flags = [{"signal": k, "value": 1.0} for k, v in hardware_state.items() if int(v) == 1]
-        if active_flags:
-            return active_flags[: settings.top_signals_count]
-        last = hardware_sequence[-1]
-        sorted_items = sorted(last.items(), key=lambda kv: abs(float(kv[1])), reverse=True)
-        return [{"signal": k, "value": float(v)} for k, v in sorted_items[: settings.top_signals_count]]
+    def _top_hardware_signals(
+        self,
+        hardware_contribs: List[Dict[str, float]],
+        hardware_rule_details: List[Dict[str, int]],
+    ) -> List[Dict]:
+        combined: List[Dict[str, float]] = [
+            {
+                "signal": item["signal"],
+                "value": float(item["value"]),
+                "score": float(item["score"]),
+            }
+            for item in hardware_contribs
+        ]
+        combined.extend(
+            {
+                "signal": item["signal"],
+                "label": item["label"],
+                "value": float(item["value"]),
+                "score": float(item["score"]),
+            }
+            for item in hardware_rule_details
+        )
+        combined.sort(key=lambda item: float(item["score"]), reverse=True)
+        return combined[: settings.top_signals_count]
+
+    def _hardware_sequence_length(self) -> int:
+        model = self.assets.get("hardware_model")
+        input_shape = getattr(model, "input_shape", None)
+        if isinstance(input_shape, list):
+            input_shape = input_shape[0]
+        if isinstance(input_shape, tuple) and len(input_shape) >= 2:
+            sequence_length = input_shape[1]
+            if isinstance(sequence_length, int) and sequence_length > 0:
+                return sequence_length
+        return self.hardware_window_size
+
+    @staticmethod
+    def _align_sequence_feature_count(matrix: np.ndarray, expected_features: int) -> np.ndarray:
+        if matrix.shape[1] > expected_features:
+            return matrix[:, :expected_features]
+        if matrix.shape[1] < expected_features:
+            pad = np.zeros((matrix.shape[0], expected_features - matrix.shape[1]), dtype=float)
+            return np.hstack([matrix, pad])
+        return matrix
+
+    def _sequence_model_analysis(
+        self,
+        sequence: List[Dict[str, float]],
+        window_size: int,
+        feature_names: List[str],
+        scaler,
+        model,
+        transform_fn,
+        domain: str,
+    ) -> tuple[float, List[Dict[str, float]]]:
+        if model is None or scaler is None:
+            raise InferenceError(f"{domain} inference assets are unavailable")
+
+        try:
+            matrix = transform_fn(sequence, window_size)
+            expected_features = getattr(scaler, "n_features_in_", matrix.shape[1])
+            matrix = self._align_sequence_feature_count(matrix, expected_features)
+
+            scaled = scaler.transform(matrix)
+            seq = np.expand_dims(scaled, axis=0)
+            recon = np.asarray(model.predict(seq, verbose=0))
+
+            if recon.shape == seq.shape:
+                error = np.abs(seq - recon)
+                raw_loss = float(np.mean(error))
+                feature_scores = np.mean(error, axis=(0, 1))
+            elif recon.ndim == 2 and recon.shape[-1] == seq.shape[-1]:
+                target = seq[:, -1, :]
+                error = np.abs(target - recon)
+                raw_loss = float(np.mean(error))
+                feature_scores = np.ravel(error[0])
+            else:
+                raise InferenceError(
+                    f"{domain} model output shape mismatch: expected {seq.shape} or {(1, seq.shape[-1])}, got {recon.shape}"
+                )
+
+            latest_row = matrix[-1]
+            contributions: List[Dict[str, float]] = []
+            for idx, feature in enumerate(feature_names[: len(feature_scores)]):
+                contributions.append(
+                    {
+                        "signal": feature,
+                        "value": float(latest_row[idx]),
+                        "score": float(feature_scores[idx]),
+                    }
+                )
+            contributions.sort(key=lambda item: item["score"], reverse=True)
+            return raw_loss, contributions[: settings.top_signals_count]
+        except InferenceError:
+            raise
+        except Exception as exc:
+            raise InferenceError(f"{domain} scoring failed: {exc}") from exc
 
     def _network_score(self, payload: Dict[str, float]) -> float:
         if self.assets["network_model"] is None or self.assets["network_scaler"] is None:
@@ -89,85 +198,52 @@ class InferenceService:
             prob = float(1.0 / (1.0 + np.exp(-prob)))
         return prob
 
-    def _process_raw_ratio(self, payload: List[Dict[str, float]]) -> float:
+    def _process_analysis(self, payload: List[Dict[str, float]]) -> tuple[float, List[Dict[str, float]]]:
         """Reconstruction loss divided by threshold (or raw loss if no threshold). Unbounded; cap later."""
-        if self.assets["process_model"] is None or self.assets["process_scaler"] is None:
-            raise InferenceError("process inference assets are unavailable")
-
-        try:
-            matrix = process_matrix(payload, self.window_size)
-            scaler = self.assets["process_scaler"]
-            expected_features = getattr(scaler, "n_features_in_", matrix.shape[1])
-            if matrix.shape[1] > expected_features:
-                matrix = matrix[:, :expected_features]
-            elif matrix.shape[1] < expected_features:
-                pad = np.zeros((matrix.shape[0], expected_features - matrix.shape[1]), dtype=float)
-                matrix = np.hstack([matrix, pad])
-
-            scaled = scaler.transform(matrix)
-            seq = np.expand_dims(scaled, axis=0)
-            recon = self.assets["process_model"].predict(seq, verbose=0)
-            recon = np.asarray(recon)
-
-            if recon.shape == seq.shape:
-                loss = float(np.mean((seq - recon) ** 2))
-            elif recon.ndim == 2 and recon.shape[-1] == seq.shape[-1]:
-                seq_target = seq[:, -1, :]
-                loss = float(np.mean((seq_target - recon) ** 2))
-            else:
-                raise InferenceError(
-                    f"process model output shape mismatch: expected {seq.shape} or {(1, seq.shape[-1])}, got {recon.shape}"
-                )
-        except InferenceError:
-            raise
-        except Exception as exc:
-            raise InferenceError(f"process scoring failed: {exc}") from exc
+        loss, contributions = self._sequence_model_analysis(
+            payload,
+            self.window_size,
+            PROCESS_FEATURES,
+            self.assets["process_scaler"],
+            self.assets["process_model"],
+            process_matrix,
+            "process",
+        )
 
         threshold = self.assets["process_threshold"]
         if threshold is None:
-            return float(loss)
+            return float(loss), contributions
         t = float(np.ravel(np.asarray(threshold))[0])
-        return float(loss / max(t, 1e-8))
+        return float(loss / max(t, 1e-8)), contributions
 
-    def _hardware_raw_ratio(self, payload: List[Dict[str, float]]) -> Optional[float]:
+    def _process_raw_ratio(self, payload: List[Dict[str, float]]) -> float:
+        ratio, _ = self._process_analysis(payload)
+        return ratio
+
+    def _hardware_analysis(self, payload: List[Dict[str, float]]) -> tuple[Optional[float], List[Dict[str, float]]]:
         """Reconstruction loss divided by threshold; returns None when hardware model assets are unavailable."""
         if self.assets.get("hardware_model") is None or self.assets.get("hardware_scaler") is None:
-            return None
+            return None, []
 
-        try:
-            matrix = hardware_matrix(payload, self.hardware_window_size)
-            scaler = self.assets["hardware_scaler"]
-            expected_features = getattr(scaler, "n_features_in_", matrix.shape[1])
-            if matrix.shape[1] > expected_features:
-                matrix = matrix[:, :expected_features]
-            elif matrix.shape[1] < expected_features:
-                pad = np.zeros((matrix.shape[0], expected_features - matrix.shape[1]), dtype=float)
-                matrix = np.hstack([matrix, pad])
-
-            scaled = scaler.transform(matrix)
-            seq = np.expand_dims(scaled, axis=0)
-            recon = self.assets["hardware_model"].predict(seq, verbose=0)
-            recon = np.asarray(recon)
-
-            if recon.shape == seq.shape:
-                loss = float(np.mean((seq - recon) ** 2))
-            elif recon.ndim == 2 and recon.shape[-1] == seq.shape[-1]:
-                seq_target = seq[:, -1, :]
-                loss = float(np.mean((seq_target - recon) ** 2))
-            else:
-                raise InferenceError(
-                    f"hardware model output shape mismatch: expected {seq.shape} or {(1, seq.shape[-1])}, got {recon.shape}"
-                )
-        except InferenceError:
-            raise
-        except Exception as exc:
-            raise InferenceError(f"hardware scoring failed: {exc}") from exc
+        loss, contributions = self._sequence_model_analysis(
+            payload,
+            self._hardware_sequence_length(),
+            HARDWARE_SEQUENCE_FEATURES,
+            self.assets["hardware_scaler"],
+            self.assets["hardware_model"],
+            hardware_matrix,
+            "hardware",
+        )
 
         threshold = self.assets.get("hardware_threshold")
         if threshold is None:
-            return float(loss)
+            return float(loss), contributions
         t = float(np.ravel(np.asarray(threshold))[0])
-        return float(loss / max(t, 1e-8))
+        return float(loss / max(t, 1e-8)), contributions
+
+    def _hardware_raw_ratio(self, payload: List[Dict[str, float]]) -> Optional[float]:
+        ratio, _ = self._hardware_analysis(payload)
+        return ratio
 
     def run(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         detected_at = datetime.now(timezone.utc).isoformat()
@@ -179,7 +255,7 @@ class InferenceService:
         wn = float(np.clip(settings.score_blend_network_model, 0.0, 1.0))
         network_combined = float(np.clip(wn * net_model + (1.0 - wn) * net_heur, 0.0, 1.0))
 
-        proc_raw = self._process_raw_ratio(payload["process_sequence"])
+        proc_raw, process_contribs = self._process_analysis(payload["process_sequence"])
         proc_model_01 = float(
             np.clip(proc_raw / max(settings.process_loss_saturation_mult, 1e-8), 0.0, 1.0)
         )
@@ -187,7 +263,7 @@ class InferenceService:
         wp = float(np.clip(settings.score_blend_process_model, 0.0, 1.0))
         process_combined = float(np.clip(wp * proc_model_01 + (1.0 - wp) * proc_heur, 0.0, 1.0))
 
-        hardware_raw = self._hardware_raw_ratio(hardware_sequence)
+        hardware_raw, hardware_contribs = self._hardware_analysis(hardware_sequence)
         hardware_model_01 = (
             0.0
             if hardware_raw is None
@@ -202,6 +278,7 @@ class InferenceService:
             max(hardware_rule, np.clip(wh * hardware_model_01 + (1.0 - wh) * hardware_heur, 0.0, 1.0))
         )
         hardware_hits = hardware_rule_hits(hardware_state)
+        hardware_rule_details = hardware_rule_contributions(hardware_state)
 
         key = self._window_key(payload)
         net_window = self._append_network_window(key, network_combined)
@@ -211,8 +288,27 @@ class InferenceService:
         severity = classify_severity(risk_score)
 
         top_network = self._top_network_signals(payload["network"])
-        top_process = self._top_process_signals(payload["process_sequence"])
-        top_hardware = self._top_hardware_signals(hardware_sequence, hardware_state)
+        top_process = self._top_process_signals(process_contribs)
+        top_hardware = self._top_hardware_signals(hardware_contribs, hardware_rule_details)
+
+        explanation = {
+            "summary": fusion_out["reason"],
+            "network": {
+                "branch": "heuristic-rank",
+                "top_factors": network_feature_contributions(payload["network"])[
+                    : settings.top_signals_count
+                ],
+            },
+            "process": {
+                "branch": "reconstruction-error",
+                "top_factors": process_contribs,
+            },
+            "hardware": {
+                "branch": "reconstruction-error + rule-based flags",
+                "top_factors": hardware_contribs,
+                "rule_hits": hardware_rule_details,
+            },
+        }
 
         return {
             "detected_at": detected_at,
@@ -242,6 +338,7 @@ class InferenceService:
             "severity": severity,
             "anomaly_reason": fusion_out["reason"],
             "top_contributors": {"network": top_network, "process": top_process, "hardware": top_hardware},
+            "explanation": explanation,
             "recommendation": recommendation_for_severity(severity),
             "model_status": {
                 "ready": self.assets["ready"],

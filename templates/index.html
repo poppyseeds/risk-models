@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RAM Antivirus · Industrial SOC</title>
+  <title>RAM Antivirus - Industrial SOC</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -384,6 +384,99 @@
       overflow-y: auto;
     }
 
+    .explanation-panel {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .explanation-summary {
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(56, 189, 248, 0.06);
+      color: #d7e6f2;
+      font-size: 13px;
+    }
+
+    .explanation-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .explanation-grid { grid-template-columns: 1fr; }
+    }
+
+    .explanation-card {
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+    }
+
+    .explanation-card h3 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    .explanation-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .explanation-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .factor-label {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .factor-meta {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .explanation-empty {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .explanation-rules {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #c8d4e0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .explanation-rule {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(244, 63, 94, 0.12);
+      border: 1px solid rgba(244, 63, 94, 0.28);
+      color: #fecdd3;
+    }
+
     .table-wrap {
       overflow-x: auto;
       border-radius: var(--radius-sm);
@@ -448,7 +541,7 @@
         <div class="logo" aria-hidden="true">RAM</div>
         <div>
           <h1>Industrial cyber defense</h1>
-          <p class="tagline">Fused network + process + hardware risk · live detections · alert history</p>
+          <p class="tagline">Fused network + process + hardware risk - live detections - alert history</p>
         </div>
       </div>
       <div class="header-meta">
@@ -461,7 +554,7 @@
         <h2><span class="icon" aria-hidden="true">{}</span> Incident payload</h2>
       </div>
       <p class="panel-desc">Paste JSON or upload a file. Quick-load industrial scenarios below.</p>
-      <textarea id="payloadInput" spellcheck="false" placeholder="{ &quot;site_id&quot;: … }"></textarea>
+      <textarea id="payloadInput" spellcheck="false" placeholder="{ &quot;site_id&quot;: ... }"></textarea>
       <div class="toolbar">
         <button type="button" class="btn btn-primary" onclick="runDetection()">Run detection</button>
         <label class="btn btn-secondary file-wrap">
@@ -478,31 +571,49 @@
 
     <div class="metrics">
       <div class="metric">
-        <div class="metric-label">System · severity</div>
-        <div id="statusCard" class="metric-value sm">—</div>
+        <div class="metric-label">System - severity</div>
+        <div id="statusCard" class="metric-value sm">-</div>
         <div id="modelBadge" aria-live="polite"></div>
       </div>
       <div class="metric">
         <div class="metric-label">Fused risk</div>
-        <div id="riskCard" class="metric-value">—</div>
+        <div id="riskCard" class="metric-value">-</div>
       </div>
       <div class="metric">
         <div class="metric-label">Network score</div>
-        <div id="networkCard" class="metric-value">—</div>
+        <div id="networkCard" class="metric-value">-</div>
       </div>
       <div class="metric">
         <div class="metric-label">Process score</div>
-        <div id="processCard" class="metric-value">—</div>
+        <div id="processCard" class="metric-value">-</div>
       </div>
       <div class="metric">
         <div class="metric-label">Hardware score</div>
-        <div id="hardwareCard" class="metric-value">—</div>
+        <div id="hardwareCard" class="metric-value">-</div>
       </div>
     </div>
 
     <section class="panel">
       <div class="panel-head">
-        <h2><span class="icon" aria-hidden="true">◇</span> Latest detection</h2>
+        <h2><span class="icon" aria-hidden="true">##</span> Latest detection</h2>
+      </div>
+      <div id="explanationPanel" class="explanation-panel" hidden>
+        <div id="explanationSummary" class="explanation-summary"></div>
+        <div class="explanation-grid">
+          <article class="explanation-card">
+            <h3>Network factors</h3>
+            <ul id="networkExplanation" class="explanation-list"></ul>
+          </article>
+          <article class="explanation-card">
+            <h3>Process factors</h3>
+            <ul id="processExplanation" class="explanation-list"></ul>
+          </article>
+          <article class="explanation-card">
+            <h3>Hardware factors</h3>
+            <ul id="hardwareExplanation" class="explanation-list"></ul>
+            <div id="hardwareRuleHits" class="explanation-rules"></div>
+          </article>
+        </div>
       </div>
       <pre id="latestDetection" class="json-out">Run detection to see the unified risk object.</pre>
     </section>

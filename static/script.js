@@ -144,19 +144,77 @@ async function runDetection() {
 
 function renderDetection(risk) {
   const statusEl = document.getElementById("statusCard");
-  const sys = risk.system_status || "—";
-  const sev = risk.severity || "—";
+  const sys = risk.system_status || "-";
+  const sev = risk.severity || "-";
   statusEl.innerHTML = `${escapeHtml(sys)} <span class="${severityBadgeClass(sev)}">${escapeHtml(sev)}</span>`;
 
   document.getElementById("riskCard").textContent =
-    typeof risk.fused_risk_score === "number" ? risk.fused_risk_score.toFixed(3) : "—";
+    typeof risk.fused_risk_score === "number" ? risk.fused_risk_score.toFixed(3) : "-";
   document.getElementById("networkCard").textContent =
-    typeof risk.network_score === "number" ? risk.network_score.toFixed(3) : "—";
+    typeof risk.network_score === "number" ? risk.network_score.toFixed(3) : "-";
   document.getElementById("processCard").textContent =
-    typeof risk.process_score === "number" ? risk.process_score.toFixed(3) : "—";
+    typeof risk.process_score === "number" ? risk.process_score.toFixed(3) : "-";
   document.getElementById("hardwareCard").textContent =
-    typeof risk.hardware_score === "number" ? risk.hardware_score.toFixed(3) : "—";
+    typeof risk.hardware_score === "number" ? risk.hardware_score.toFixed(3) : "-";
+
+  renderExplanation(risk.explanation || {});
   document.getElementById("latestDetection").textContent = JSON.stringify(risk, null, 2);
+}
+
+function formatScore(value) {
+  return Number.isFinite(Number(value)) ? Number(value).toFixed(3) : "-";
+}
+
+function renderFactorItems(items) {
+  const filtered = Array.isArray(items) ? items.filter((item) => Number(item && item.score) > 1e-6) : [];
+  if (filtered.length === 0) {
+    return '<li class="explanation-empty">No strong factors detected.</li>';
+  }
+  return filtered
+    .map((item) => {
+      const label = item.label || item.signal || item.feature || "factor";
+      const value = item.value != null ? item.value : item.latest_value;
+      const score = item.score;
+      return `
+        <li>
+          <span class="factor-label">${escapeHtml(String(label))}</span>
+          <span class="factor-meta">score ${formatScore(score)} - value ${escapeHtml(String(value))}</span>
+        </li>`;
+    })
+    .join("");
+}
+
+function renderExplanation(explanation) {
+  const panel = document.getElementById("explanationPanel");
+  const summaryEl = document.getElementById("explanationSummary");
+  const networkEl = document.getElementById("networkExplanation");
+  const processEl = document.getElementById("processExplanation");
+  const hardwareEl = document.getElementById("hardwareExplanation");
+  const rulesEl = document.getElementById("hardwareRuleHits");
+
+  if (!panel || !summaryEl || !networkEl || !processEl || !hardwareEl || !rulesEl) return;
+
+  const hasContent = explanation && Object.keys(explanation).length > 0;
+  if (!hasContent) {
+    panel.hidden = true;
+    return;
+  }
+
+  panel.hidden = false;
+  summaryEl.innerHTML = `<strong>Likely contributors:</strong> ${escapeHtml(String(explanation.summary || "No summary available"))}`;
+  networkEl.innerHTML = renderFactorItems(explanation.network && explanation.network.top_factors);
+  processEl.innerHTML = renderFactorItems(explanation.process && explanation.process.top_factors);
+  hardwareEl.innerHTML = renderFactorItems(explanation.hardware && explanation.hardware.top_factors);
+
+  const ruleHits = (explanation.hardware && explanation.hardware.rule_hits) || [];
+  rulesEl.innerHTML = ruleHits.length
+    ? ruleHits
+        .map((hit) => {
+          const label = hit.label || hit.signal || "hardware flag";
+          return `<span class="explanation-rule">${escapeHtml(String(label))}</span>`;
+        })
+        .join("")
+    : '<span class="explanation-empty">No hardware rule hits.</span>';
 }
 
 function escapeHtml(s) {
@@ -196,7 +254,7 @@ async function refreshHistory() {
       <td>${escapeHtml(String(row.site_id))}</td>
       <td>${escapeHtml(String(row.asset_id))}</td>
       <td><span class="${severityBadgeClass(sev)}">${escapeHtml(sev)}</span></td>
-      <td>${Number.isFinite(Number(row.risk_score)) ? Number(row.risk_score).toFixed(3) : "—"}</td>
+      <td>${Number.isFinite(Number(row.risk_score)) ? Number(row.risk_score).toFixed(3) : "-"}</td>
       <td class="reason-cell">${escapeHtml(String(row.reason))}</td>`;
     tbody.appendChild(tr);
   });
@@ -213,7 +271,7 @@ async function refreshStatus() {
     pillEl.textContent = degraded ? "Degraded" : "Operations";
     pillEl.classList.toggle("degraded", degraded);
     if (data.model_errors && data.model_errors.length > 0) {
-      badgeEl.textContent = "Model: " + data.model_errors.length + " issue(s) — check /api/status";
+      badgeEl.textContent = "Model: " + data.model_errors.length + " issue(s) - check /api/status";
     }
   } catch {
     pillEl.textContent = "Status unknown";

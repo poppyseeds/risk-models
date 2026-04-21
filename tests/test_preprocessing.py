@@ -42,6 +42,20 @@ def test_validate_payload_missing_key():
         validate_payload(bad)
 
 
+def test_validate_payload_rejects_non_numeric_feature():
+    bad = _payload()
+    bad["process_sequence"][0]["motor_current_a"] = "oops"
+    with pytest.raises(PayloadValidationError):
+        validate_payload(bad)
+
+
+def test_validate_payload_rejects_bad_timestamp():
+    bad = _payload()
+    bad["timestamp"] = "not-a-timestamp"
+    with pytest.raises(PayloadValidationError):
+        validate_payload(bad)
+
+
 def test_process_matrix_pads_to_window():
     matrix = process_matrix(_payload()["process_sequence"], window_size=4)
     assert matrix.shape == (4, 4)
