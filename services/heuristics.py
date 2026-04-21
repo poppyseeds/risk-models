@@ -1,4 +1,4 @@
-"""Bounded0–1 anomaly hints from raw industrial features (complements NN scores for credible demos)."""
+"""Bounded 0-1 anomaly hints from raw industrial features."""
 
 from __future__ import annotations
 
@@ -6,9 +6,8 @@ from typing import Dict, List
 
 import numpy as np
 
-from preprocessing.contracts import NETWORK_FEATURES, PROCESS_FEATURES
+from preprocessing.contracts import HARDWARE_SEQUENCE_FEATURES, NETWORK_FEATURES, PROCESS_FEATURES
 
-# Soft upper envelope for “steady-state” OT network; exceed → ramps toward 1.0
 _NETWORK_SOFT_MAX: Dict[str, float] = {
     "packet_rate": 280.0,
     "bytes_per_sec": 110_000.0,
@@ -20,12 +19,29 @@ _NETWORK_SOFT_MAX: Dict[str, float] = {
     "dns_query_rate": 14.0,
 }
 
-# Typical peak-to-peak over a short window under normal control (used to score process drift)
 _PROCESS_TYPICAL_PTP: Dict[str, float] = {
     "reactor_temp_c": 1.2,
     "reactor_pressure_bar": 0.35,
     "valve_position_pct": 8.0,
     "motor_current_a": 1.2,
+}
+
+_HARDWARE_TYPICAL_PTP: Dict[str, float] = {
+    "vcc_voltage_v": 0.08,
+    "cpu_current_ma": 35.0,
+    "clock_jitter_ns": 3.5,
+    "board_temp_c": 6.0,
+    "brownout_flag": 0.25,
+    "reset_count_delta": 0.5,
+}
+
+_HARDWARE_CRITICAL_FLAGS: Dict[str, str] = {
+    "chassis_open": "Chassis opened",
+    "tamper_switch": "Tamper switch triggered",
+    "jtag_active": "JTAG debug port active",
+    "uart_active": "UART debug port active",
+    "unexpected_usb": "Unexpected USB device attached",
+    "usb_hid_burst": "USB HID burst detected",
 }
 
 
@@ -50,3 +66,30 @@ def process_heuristic_anomaly(process_sequence: List[Dict[str, float]]) -> float
     scales = np.array([_PROCESS_TYPICAL_PTP[k] for k in PROCESS_FEATURES], dtype=float)
     ratios = np.clip(ptp / (scales + 1e-8), 0.0, 4.0) / 4.0
     return float(np.mean(ratios))
+
+
+def hardware_heuristic_anomaly(hardware_sequence: List[Dict[str, float]]) -> float:
+    if not hardware_sequence:
+        return 0.0
+    if len(hardware_sequence) < 2:
+        row = hardware_sequence[-1]
+        brownout = float(np.clip(float(row["brownout_flag"]), 0.0, 1.0))
+        resets = float(np.clip(float(row["reset_count_delta"]) / 2.0, 0.0, 1.0))
+        return float(max(brownout, resets))
+    arr = np.array([[float(row[k]) for k in HARDWARE_SEQUENCE_FEATURES] for row in hardware_sequence], dtype=float)
+    ptp = np.ptp(arr, axis=0)
+    scales = np.array([_HARDWARE_TYPICAL_PTP[k] for k in HARDWARE_SEQUENCE_FEATURES], dtype=float)
+    ratios = np.clip(ptp / (scales + 1e-8), 0.0, 4.0) / 4.0
+    return float(np.mean(ratios))
+
+
+def hardware_rule_hits(hardware_state: Dict[str, int]) -> List[str]:
+    hits: List[str] = []
+    for key, label in _HARDWARE_CRITICAL_FLAGS.items():
+        if int(hardware_state.get(key, 0)) == 1:
+            hits.append(label)
+    return hits
+
+
+def hardware_rule_anomaly(hardware_state: Dict[str, int]) -> float:
+    return 1.0 if hardware_rule_hits(hardware_state) else 0.0

@@ -448,7 +448,7 @@
         <div class="logo" aria-hidden="true">RAM</div>
         <div>
           <h1>Industrial cyber defense</h1>
-          <p class="tagline">Fused network + process risk · live detections · alert history</p>
+          <p class="tagline">Fused network + process + hardware risk · live detections · alert history</p>
         </div>
       </div>
       <div class="header-meta">
@@ -472,6 +472,7 @@
         <button type="button" class="btn btn-ghost" onclick="loadSample('suspicious_network')">Suspicious network</button>
         <button type="button" class="btn btn-ghost" onclick="loadSample('suspicious_process')">Suspicious process</button>
         <button type="button" class="btn btn-ghost" onclick="loadSample('combined_attack')">Combined attack</button>
+        <button type="button" class="btn btn-ghost" onclick="loadSample('hardware_tamper')">Hardware tamper</button>
       </div>
     </section>
 
@@ -492,6 +493,10 @@
       <div class="metric">
         <div class="metric-label">Process score</div>
         <div id="processCard" class="metric-value">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Hardware score</div>
+        <div id="hardwareCard" class="metric-value">—</div>
       </div>
     </div>
 

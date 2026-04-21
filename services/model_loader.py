@@ -19,6 +19,17 @@ def _safe_load(load_fn, path: str, state: Dict[str, Any], key: str):
         return None
 
 
+def _resolve_hardware_model_path(path: str) -> str:
+    candidate = Path(path)
+    if candidate.exists():
+        return str(candidate)
+    if candidate.suffix.lower() == ".h5":
+        alt = candidate.with_suffix(".keras")
+        if alt.exists():
+            return str(alt)
+    return path
+
+
 def load_inference_assets() -> Dict[str, Any]:
     state: Dict[str, Any] = {"errors": []}
 
@@ -40,6 +51,16 @@ def load_inference_assets() -> Dict[str, Any]:
     process_scaler = _safe_load(joblib.load, settings.process_scaler_path, state, "process_scaler")
     process_threshold = _safe_load(np.load, settings.process_threshold_path, state, "process_threshold")
 
+    hardware_model_path = _resolve_hardware_model_path(settings.hardware_model_path)
+    hardware_model = _safe_load(
+        lambda p: tf.keras.models.load_model(p, compile=False),
+        hardware_model_path,
+        state,
+        "hardware_model",
+    )
+    hardware_scaler = _safe_load(joblib.load, settings.hardware_scaler_path, state, "hardware_scaler")
+    hardware_threshold = _safe_load(np.load, settings.hardware_threshold_path, state, "hardware_threshold")
+
     return {
         "network_model": network_model,
         "network_scaler": network_scaler,
@@ -47,6 +68,9 @@ def load_inference_assets() -> Dict[str, Any]:
         "process_model": process_model,
         "process_scaler": process_scaler,
         "process_threshold": process_threshold,
+        "hardware_model": hardware_model,
+        "hardware_scaler": hardware_scaler,
+        "hardware_threshold": hardware_threshold,
         "ready": len(state["errors"]) == 0,
         "errors": state["errors"],
     }

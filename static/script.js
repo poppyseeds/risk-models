@@ -3,6 +3,7 @@ const SAMPLE_FILES = {
   suspicious_network: "/samples/suspicious_network.json",
   suspicious_process: "/samples/suspicious_process.json",
   combined_attack: "/samples/combined_attack.json",
+  hardware_tamper: "/samples/hardware_tamper.json",
 };
 
 function severityBadgeClass(sev) {
@@ -153,6 +154,8 @@ function renderDetection(risk) {
     typeof risk.network_score === "number" ? risk.network_score.toFixed(3) : "—";
   document.getElementById("processCard").textContent =
     typeof risk.process_score === "number" ? risk.process_score.toFixed(3) : "—";
+  document.getElementById("hardwareCard").textContent =
+    typeof risk.hardware_score === "number" ? risk.hardware_score.toFixed(3) : "—";
   document.getElementById("latestDetection").textContent = JSON.stringify(risk, null, 2);
 }
 

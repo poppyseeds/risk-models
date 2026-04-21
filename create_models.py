@@ -4,7 +4,7 @@ import joblib
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from preprocessing.contracts import NETWORK_FEATURES, PROCESS_FEATURES
+from preprocessing.contracts import HARDWARE_SEQUENCE_FEATURES, NETWORK_FEATURES, PROCESS_FEATURES
 
 
 def train_scalers_from_csv(csv_path: str) -> None:
@@ -23,7 +23,16 @@ def train_scalers_from_csv(csv_path: str) -> None:
     joblib.dump(network_scaler, model_dir / "scaler.pkl")
     joblib.dump(NETWORK_FEATURES, model_dir / "columns.pkl")
     joblib.dump(process_scaler, model_dir / "lstm_scaler.pkl")
-    print("Saved scaler artifacts into models/")
+
+    missing_hw = [c for c in HARDWARE_SEQUENCE_FEATURES if c not in frame.columns]
+    if not missing_hw:
+        hardware_scaler = StandardScaler().fit(frame[HARDWARE_SEQUENCE_FEATURES].values)
+        joblib.dump(hardware_scaler, model_dir / "hardware_scaler.pkl")
+        print("Saved network, process, and hardware scaler artifacts into models/")
+    else:
+        print(
+            f"Saved network/process scaler artifacts into models/; skipped hardware scaler, missing columns: {missing_hw}"
+        )
 
 
 if __name__ == "__main__":
